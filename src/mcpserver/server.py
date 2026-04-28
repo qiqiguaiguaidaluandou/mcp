@@ -3,12 +3,10 @@ from mcp.server.fastmcp import FastMCP
 from starlette.middleware.cors import CORSMiddleware
 
 from mcpserver.config import HOST, PORT
-from mcpserver.tools import my_api, sales_order, weather
+from mcpserver.tools import sales_order
 
 mcp = FastMCP("mcpserver", host=HOST, port=PORT)
 
-weather.register(mcp)
-# my_api.register(mcp)
 sales_order.register(mcp)
 
 
