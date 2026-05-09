@@ -2,7 +2,7 @@
 
 一个基于 [Model Context Protocol](https://modelcontextprotocol.io/) 的个人 MCP 服务，把企业内部 CRM、生产/维修等接口包装成大模型可直接调用的工具，对接 Claude Code、Claude Desktop、Cursor 等 MCP 客户端。
 
-通过 Streamable HTTP 传输暴露统一 endpoint，支持 CORS，可被多个客户端同时接入。
+通过 Streamable HTTP 传输暴露统一 endpoint，支持 CORS，可被多个客户端同时接入。.
 
 ## 功能
 
