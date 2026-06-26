@@ -3,12 +3,14 @@ from mcp.server.fastmcp import FastMCP
 from starlette.middleware.cors import CORSMiddleware
 
 from mcpserver.config import HOST, PORT
-from mcpserver.tools import repair_process, sales_order
+from mcpserver.tools import device_profile, fqc_report, repair_process, sales_order
 
 mcp = FastMCP("mcpserver", host=HOST, port=PORT)
 
 sales_order.register(mcp)
 repair_process.register(mcp)
+device_profile.register(mcp)
+fqc_report.register(mcp)
 
 
 def main() -> None:

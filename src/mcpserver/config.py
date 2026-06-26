@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 HOST = os.getenv("MCP_HOST", "")
 PORT = int(os.getenv("MCP_PORT", "8765"))
 
@@ -18,3 +19,5 @@ LOGIN_USERNAME = os.getenv("LOGIN_USERNAME", "")
 LOGIN_PASSWORD = os.getenv("LOGIN_PASSWORD", "")
 LOGIN_URL = os.getenv("LOGIN_URL", "https://as/pi/s/m/login")
 GETSN_URL = os.getenv("GETSN_URL", "https://ti/open/m/m/m/GetSn")
+GET_DEVICE_PROFILE_URL = os.getenv("GET_DEVICE_PROFILE_URL", "https://placeholder/GetDeviceProfile")
+GET_FQC_REPORT_URL = os.getenv("GET_FQC_REPORT_URL", "https://placeholder/GetFqcReport")

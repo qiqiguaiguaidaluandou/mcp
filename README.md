@@ -13,6 +13,8 @@
 | `search_sn_in_sales_post_order_count` | 统计某 SN 在 CRM 的售后维修工单总数 | JWT（本地生成，直接放 Authorization 头） |
 | `search_sn_in_sales_post_order_data` | 查询某 SN 最近一次售后维修工单详情 | JWT（本地生成，直接放 Authorization 头） |
 | `get_repair_process_status_by_sn` | 查询某 SN 在生产/维修流水线的当前流程节点 | JWT + 票据，自动缓存与续期 |
+| `get_device_profile_by_sn` | 查询某 SN 的设备档案（型号、客户、项目、生产/验收日期、保修等） | JWT（本地生成，直接放 Authorization 头） |
+| `get_fqc_report_by_sn` | 查询某 SN 的 FQC 出厂质检报告文件（文件名 + Base64 内容） | JWT（本地生成，直接放 Authorization 头） |
 
 `get_repair_process_status_by_sn` 内部完成三步流程：
 
@@ -44,7 +46,9 @@ mcpserver/
     └── tools/
         ├── __init__.py
         ├── sales_order.py      # CRM 售后工单查询（按 SN）
-        └── repair_process.py   # MES 生产/维修流程查询（按 SN）
+        ├── repair_process.py   # MES 生产/维修流程查询（按 SN）
+        ├── device_profile.py   # 设备档案信息查询（按 SN）
+        └── fqc_report.py       # FQC 出厂质检报告查询（按 SN）
 ```
 
 设计原则：
