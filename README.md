@@ -14,7 +14,9 @@
 | `search_sn_in_sales_post_order_data` | 查询某 SN 最近一次售后维修工单详情 | JWT（本地生成，直接放 Authorization 头） |
 | `get_repair_process_status_by_sn` | 查询某 SN 在生产/维修流水线的当前流程节点 | JWT + 票据，自动缓存与续期 |
 | `get_device_profile_by_sn` | 查询某 SN 的设备档案（型号、客户、项目、生产/验收日期、保修等） | JWT（本地生成，直接放 Authorization 头） |
-| `get_fqc_report_by_sn` | 查询某 SN 的 FQC 出厂质检报告（Excel），解码还原成本地文件并返回路径 | JWT（本地生成，直接放 Authorization 头） |
+| `get_fqc_report_by_sn` | 查询某 SN 的 FQC 出厂质检报告（Excel），解码落地到服务器并返回下载链接 | JWT（本地生成，直接放 Authorization 头） |
+
+> `get_fqc_report_by_sn` 把报告解码还原后保存到 `FQC_REPORT_DIR`，并通过 `GET /files/{name}` 暴露下载。返回的 `downloadUrl` 由 `PUBLIC_BASE_URL` 拼成，**远程部署时必须把 `PUBLIC_BASE_URL` 配成服务对外可访问的地址**，否则链接不可用。
 
 `get_repair_process_status_by_sn` 内部完成三步流程：
 
@@ -43,6 +45,7 @@ mcpserver/
     ├── config.py               # 环境变量统一读取（自动加载 .env）
     ├── http_client.py          # 进程级共享 httpx 客户端（连接复用）
     ├── auth.py                 # JWT/Ticket 缓存 + 401 自愈的请求原语
+    ├── files.py                # GET /files/{name} 文件下载端点 + 下载链接拼接
     └── tools/
         ├── __init__.py
         ├── sales_order.py      # CRM 售后工单查询（按 SN）

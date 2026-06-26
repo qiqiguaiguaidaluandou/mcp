@@ -23,4 +23,8 @@ GET_DEVICE_PROFILE_URL = os.getenv("GET_DEVICE_PROFILE_URL", "https://placeholde
 GET_FQC_REPORT_URL = os.getenv("GET_FQC_REPORT_URL", "https://placeholder/GetFqcReport")
 
 # FQC 报告解码后落地保存的目录
-FQC_REPORT_DIR = os.getenv("FQC_REPORT_DIR", os.path.expanduser("~/fqc_reports"))
+FQC_REPORT_DIR = os.path.expanduser(os.getenv("FQC_REPORT_DIR") or "~/fqc_reports")
+
+# 服务对外可访问的基础地址，用于拼接文件下载链接。
+# 远程部署时必须填真实公网/内网地址，如 https://mcp.company.com 或 http://1.2.3.4:8765
+PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "").rstrip("/")

@@ -2,6 +2,7 @@ import uvicorn
 from mcp.server.fastmcp import FastMCP
 from starlette.middleware.cors import CORSMiddleware
 
+from mcpserver import files
 from mcpserver.config import HOST, PORT
 from mcpserver.tools import device_profile, fqc_report, repair_process, sales_order
 
@@ -15,6 +16,7 @@ fqc_report.register(mcp)
 
 def main() -> None:
     app = mcp.streamable_http_app()
+    files.register(app)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
