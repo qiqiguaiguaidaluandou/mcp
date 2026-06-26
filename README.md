@@ -10,8 +10,8 @@
 
 | 工具名 | 用途 | 鉴权方式 |
 |---|---|---|
-| `search_sn_in_sales_post_order_count` | 统计某 SN 在 CRM 的售后维修工单总数 | 无鉴权 |
-| `search_sn_in_sales_post_order_data` | 查询某 SN 最近一次售后维修工单详情 | 无鉴权 |
+| `search_sn_in_sales_post_order_count` | 统计某 SN 在 CRM 的售后维修工单总数 | JWT（本地生成，直接放 Authorization 头） |
+| `search_sn_in_sales_post_order_data` | 查询某 SN 最近一次售后维修工单详情 | JWT（本地生成，直接放 Authorization 头） |
 | `get_repair_process_status_by_sn` | 查询某 SN 在生产/维修流水线的当前流程节点 | JWT + 票据，自动缓存与续期 |
 
 `get_repair_process_status_by_sn` 内部完成三步流程：
@@ -20,7 +20,12 @@
 2. 用 JWT 调登录接口换取 `Ticket` 和 `InvOrgId`
 3. 用 `Ticket` 调 GetSN 接口获取实时流程状态
 
-JWT 与 Ticket 共享缓存，55 分钟 TTL（提前 5 分钟刷新作为时钟偏差余量），`asyncio.Lock` 保证并发首次未命中时只发起一次登录。
+鉴权统一收敛在 `auth.py`：
+
+- **JWT 公共缓存**：所有 JWT 鉴权接口（含上面两个 CRM 工具）共享同一份 token，55 分钟 TTL（提前 5 分钟刷新作为时钟偏差余量）。
+- **Ticket 缓存**：仅 MES 链路使用，独立 55 分钟 TTL。
+- 两份缓存各带 `asyncio.Lock`，保证并发首次未命中时只发起一次生成/登录。
+- **401 自愈**：任何接口收到 401/403 时，`post_with_jwt` 会清空 JWT 缓存、重新生成 token 并重试一次，避免坏 token 在整个 TTL 内毒化所有接口。
 
 ## 项目结构
 
@@ -34,9 +39,12 @@ mcpserver/
     ├── __init__.py
     ├── server.py               # 入口：装配 FastMCP + CORS + uvicorn
     ├── config.py               # 环境变量统一读取（自动加载 .env）
+    ├── http_client.py          # 进程级共享 httpx 客户端（连接复用）
+    ├── auth.py                 # JWT/Ticket 缓存 + 401 自愈的请求原语
     └── tools/
         ├── __init__.py
-        └── sales_order.py      # 售后查询 + 维修流程查询工具
+        ├── sales_order.py      # CRM 售后工单查询（按 SN）
+        └── repair_process.py   # MES 生产/维修流程查询（按 SN）
 ```
 
 设计原则：
