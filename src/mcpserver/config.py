@@ -21,3 +21,6 @@ LOGIN_URL = os.getenv("LOGIN_URL", "https://as/pi/s/m/login")
 GETSN_URL = os.getenv("GETSN_URL", "https://ti/open/m/m/m/GetSn")
 GET_DEVICE_PROFILE_URL = os.getenv("GET_DEVICE_PROFILE_URL", "https://placeholder/GetDeviceProfile")
 GET_FQC_REPORT_URL = os.getenv("GET_FQC_REPORT_URL", "https://placeholder/GetFqcReport")
+
+# FQC 报告解码后落地保存的目录
+FQC_REPORT_DIR = os.getenv("FQC_REPORT_DIR", os.path.expanduser("~/fqc_reports"))

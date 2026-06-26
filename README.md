@@ -14,7 +14,7 @@
 | `search_sn_in_sales_post_order_data` | 查询某 SN 最近一次售后维修工单详情 | JWT（本地生成，直接放 Authorization 头） |
 | `get_repair_process_status_by_sn` | 查询某 SN 在生产/维修流水线的当前流程节点 | JWT + 票据，自动缓存与续期 |
 | `get_device_profile_by_sn` | 查询某 SN 的设备档案（型号、客户、项目、生产/验收日期、保修等） | JWT（本地生成，直接放 Authorization 头） |
-| `get_fqc_report_by_sn` | 查询某 SN 的 FQC 出厂质检报告文件（文件名 + Base64 内容） | JWT（本地生成，直接放 Authorization 头） |
+| `get_fqc_report_by_sn` | 查询某 SN 的 FQC 出厂质检报告（Excel），解码还原成本地文件并返回路径 | JWT（本地生成，直接放 Authorization 头） |
 
 `get_repair_process_status_by_sn` 内部完成三步流程：
 
