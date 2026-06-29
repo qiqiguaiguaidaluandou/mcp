@@ -19,8 +19,9 @@ from mcpserver import config, http_client
 _JWT_TTL_MINUTES = 60
 _AUTH_REFRESH_BUFFER_SECONDS = 5 * 60
 
-# JWT 公共缓存：所有需要 JWT 鉴权的接口共享这一份。
-_jwt_cache: dict = {"token": None, "expires_at": 0.0}
+# JWT 缓存：按 (secret, issuer) 凭证集分桶。同一套凭证的接口共享一份 token，
+# 不同凭证集（如 LOGIN_URL 用的独立凭证）各自缓存、互不影响。
+_jwt_cache: dict[tuple[str, str], dict] = {}
 _jwt_lock = asyncio.Lock()
 
 # Ticket 缓存：仅"JWT 换票据"链路（如 MES）使用。
@@ -30,38 +31,46 @@ _ticket_lock = asyncio.Lock()
 _AUTH_FAIL_STATUS = (401, 403)
 
 
-def _create_jwt_token() -> str:
+def _create_jwt_token(secret: str, issuer: str) -> str:
     now = datetime.now(timezone.utc)
     payload = {
-        "iss": config.JWT_ISSUER,
+        "iss": issuer,
         "exp": int((now + timedelta(minutes=_JWT_TTL_MINUTES)).timestamp()),
         "sub": "",
         "aud": "",
         "nbf": int((now - timedelta(minutes=10)).timestamp()),
     }
-    token = jwt.encode(payload, config.JWT_SECRET, algorithm="HS256")
+    token = jwt.encode(payload, secret, algorithm="HS256")
     if isinstance(token, bytes):
         token = token.decode("utf-8")
     return token
 
 
-async def _get_jwt_token() -> str:
-    """返回缓存中的 JWT；不存在或已过期则本地重新生成并写回缓存。"""
+async def _get_jwt_token(secret: str, issuer: str) -> str:
+    """返回指定凭证集缓存中的 JWT；不存在或已过期则本地重新生成并写回缓存。"""
+    key = (secret, issuer)
     now = time.time()
-    if _jwt_cache["token"] and now < _jwt_cache["expires_at"]:
-        return _jwt_cache["token"]
+    entry = _jwt_cache.get(key)
+    if entry and now < entry["expires_at"]:
+        return entry["token"]
     async with _jwt_lock:
         now = time.time()
-        if _jwt_cache["token"] and now < _jwt_cache["expires_at"]:
-            return _jwt_cache["token"]
-        _jwt_cache["token"] = _create_jwt_token()
-        _jwt_cache["expires_at"] = now + _JWT_TTL_MINUTES * 60 - _AUTH_REFRESH_BUFFER_SECONDS
-        return _jwt_cache["token"]
+        entry = _jwt_cache.get(key)
+        if entry and now < entry["expires_at"]:
+            return entry["token"]
+        token = _create_jwt_token(secret, issuer)
+        _jwt_cache[key] = {
+            "token": token,
+            "expires_at": now + _JWT_TTL_MINUTES * 60 - _AUTH_REFRESH_BUFFER_SECONDS,
+        }
+        return token
 
 
-def invalidate_jwt() -> None:
-    """作废 JWT 缓存，下次取 token 时强制重新生成。"""
-    _jwt_cache["expires_at"] = 0.0
+def invalidate_jwt(secret: str, issuer: str) -> None:
+    """作废指定凭证集的 JWT 缓存，下次取 token 时强制重新生成。"""
+    entry = _jwt_cache.get((secret, issuer))
+    if entry:
+        entry["expires_at"] = 0.0
 
 
 def invalidate_ticket() -> None:
@@ -69,18 +78,24 @@ def invalidate_ticket() -> None:
     _ticket_cache["expires_at"] = 0.0
 
 
-async def post_with_jwt(url: str, body: dict) -> dict:
+async def post_with_jwt(
+    url: str, body: dict, *, secret: str | None = None, issuer: str | None = None
+) -> dict:
     """带 JWT 鉴权发 POST 并返回 JSON。
 
-    token 取自共享缓存。若服务端返回 401/403（视为 token 失效），清空 JWT 缓存
-    并用新生成的 token 重试一次；仍失败则抛出 HTTP 异常。
+    默认用主凭证集（config.JWT_SECRET / JWT_ISSUER）；需要独立凭证的接口
+    （如 LOGIN_URL）显式传入 secret / issuer。token 取自对应凭证集的缓存。
+    若服务端返回 401/403（视为 token 失效），清空该凭证集缓存并用新 token
+    重试一次；仍失败则抛出 HTTP 异常。
     """
+    secret = secret or config.JWT_SECRET
+    issuer = issuer or config.JWT_ISSUER
     client = http_client.get_client()
     for attempt in range(2):
-        token = await _get_jwt_token()
+        token = await _get_jwt_token(secret, issuer)
         r = await client.post(url, json=body, headers={"Authorization": f"Bearer {token}"})
         if r.status_code in _AUTH_FAIL_STATUS and attempt == 0:
-            invalidate_jwt()
+            invalidate_jwt(secret, issuer)
             continue
         r.raise_for_status()
         return r.json()
@@ -97,7 +112,12 @@ async def _login_for_ticket() -> tuple[str, int]:
         "Method": "Login",
         "Context": None,
     }
-    data = await post_with_jwt(config.LOGIN_URL, body)
+    data = await post_with_jwt(
+        config.LOGIN_URL,
+        body,
+        secret=config.LOGIN_JWT_SECRET,
+        issuer=config.LOGIN_JWT_ISSUER,
+    )
     if not data.get("Success"):
         raise RuntimeError(f"Login failed: {data.get('Message')}")
     ctx = data.get("Context") or {}

@@ -15,6 +15,9 @@ SEARCH_SN_IN_SALES_POST_ORDER_URL = os.getenv(
 
 JWT_SECRET = os.getenv("JWT_SECRET", "")
 JWT_ISSUER = os.getenv("JWT_ISSUER", "")
+# LOGIN_URL（换票据）所用的 JWT 凭证与其它接口不同；未配置时回退到主集。
+LOGIN_JWT_SECRET = os.getenv("LOGIN_JWT_SECRET", "") or JWT_SECRET
+LOGIN_JWT_ISSUER = os.getenv("LOGIN_JWT_ISSUER", "") or JWT_ISSUER
 LOGIN_USERNAME = os.getenv("LOGIN_USERNAME", "")
 LOGIN_PASSWORD = os.getenv("LOGIN_PASSWORD", "")
 LOGIN_URL = os.getenv("LOGIN_URL", "https://as/pi/s/m/login")
