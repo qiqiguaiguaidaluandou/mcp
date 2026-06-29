@@ -14,7 +14,8 @@ def get_client() -> httpx.AsyncClient:
     """返回共享的 httpx 异步客户端，不存在或已关闭则新建。"""
     global _client
     if _client is None or _client.is_closed:
-        _client = httpx.AsyncClient(timeout=_DEFAULT_TIMEOUT)
+        # verify=False：绕过 SSL 证书验证（接口为自签名/内网证书）
+        _client = httpx.AsyncClient(timeout=_DEFAULT_TIMEOUT, verify=False)
     return _client
 
 
